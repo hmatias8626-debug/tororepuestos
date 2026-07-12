@@ -156,6 +156,54 @@ def agregar_modelos_compatibles(producto_id: int, entradas: list[tuple[str, str]
         client.table("toro_modelos_compatibles").insert(rows).execute()
 
 
+# ---------- Edicion de productos ----------
+
+def obtener_producto(producto_id: int):
+    client = get_client()
+    result = client.table("toro_productos").select("*").eq("id", producto_id).single().execute()
+    return result.data
+
+
+def actualizar_producto(producto_id: int, **campos):
+    client = get_client()
+    client.table("toro_productos").update(campos).eq("id", producto_id).execute()
+
+
+def obtener_marcas_compatibles_producto(producto_id: int):
+    client = get_client()
+    result = (
+        client.table("toro_marcas_compatibles")
+        .select("id, marca_vehiculo")
+        .eq("producto_id", producto_id)
+        .order("marca_vehiculo")
+        .execute()
+    )
+    return result.data
+
+
+def obtener_modelos_compatibles_producto(producto_id: int):
+    client = get_client()
+    result = (
+        client.table("toro_modelos_compatibles")
+        .select("id, marca_vehiculo, modelo")
+        .eq("producto_id", producto_id)
+        .order("marca_vehiculo")
+        .order("modelo")
+        .execute()
+    )
+    return result.data
+
+
+def eliminar_marca_compatible(id_: int):
+    client = get_client()
+    client.table("toro_marcas_compatibles").delete().eq("id", id_).execute()
+
+
+def eliminar_modelo_compatible(id_: int):
+    client = get_client()
+    client.table("toro_modelos_compatibles").delete().eq("id", id_).execute()
+
+
 # ---------- Presupuestos ----------
 
 def crear_presupuesto():
