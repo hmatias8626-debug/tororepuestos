@@ -213,3 +213,133 @@ def listar_presupuestos(estado: str | None = None, limit: int = 100):
     if estado and estado != "Todos":
         query = query.eq("estado", estado)
     return query.execute().data
+
+
+# ---------- Control de stock ----------
+
+def obtener_productos_stock():
+    client = get_client()
+    result = (
+        client.table("toro_productos")
+        .select("id, familia, subfamilia, codigo, descripcion, precio, stock")
+        .order("familia")
+        .order("codigo")
+        .execute()
+    )
+    return result.data
+
+
+def actualizar_precio_stock(producto_id: int, precio: float, stock: int):
+    client = get_client()
+    client.table("toro_productos").update({"precio": precio, "stock": stock}).eq("id", producto_id).execute()
+
+
+# ---------- Proveedores y compras ----------
+
+def obtener_proveedores():
+    client = get_client()
+    result = client.table("toro_proveedores").select("*").order("nombre").execute()
+    return result.data
+
+
+def crear_proveedor(nombre: str, contacto: str | None = None):
+    client = get_client()
+    result = client.table("toro_proveedores").insert({"nombre": nombre, "contacto": contacto or None}).execute()
+    return result.data[0]
+
+
+def registrar_compra(proveedor_id: int, producto_id: int, cantidad: int, costo_unitario: float, pagada: bool = False):
+    client = get_client()
+    result = client.table("toro_compras").insert({
+        "proveedor_id": proveedor_id,
+        "producto_id": producto_id,
+        "cantidad": cantidad,
+        "costo_unitario": costo_unitario,
+        "pagada": pagada,
+    }).execute()
+    client.rpc("ajustar_stock", {"p_producto_id": producto_id, "p_delta": cantidad}).execute()
+    return result.data[0]
+
+
+def obtener_compras(proveedor_id: int | None = None, solo_pendientes: bool = False, limit: int = 200):
+    client = get_client()
+    query = (
+        client.table("toro_compras")
+        .select("*, productos:toro_productos(codigo, descripcion), proveedores:toro_proveedores(nombre)")
+        .order("id", desc=True)
+        .limit(limit)
+    )
+    if proveedor_id:
+        query = query.eq("proveedor_id", proveedor_id)
+    if solo_pendientes:
+        query = query.eq("pagada", False)
+    return query.execute().data
+
+
+def marcar_compra_pagada(compra_id: int):
+    client = get_client()
+    client.table("toro_compras").update({"pagada": True}).eq("id", compra_id).execute()
+
+
+def obtener_deuda_por_proveedor():
+    """Total adeudado (compras no pagadas) agrupado por proveedor."""
+    client = get_client()
+    proveedores = {p["id"]: p["nombre"] for p in obtener_proveedores()}
+    pendientes = client.table("toro_compras").select("proveedor_id, total").eq("pagada", False).execute().data
+
+    deuda = {pid: 0.0 for pid in proveedores}
+    for row in pendientes:
+        deuda[row["proveedor_id"]] = deuda.get(row["proveedor_id"], 0.0) + float(row["total"])
+
+    return [{"proveedor_id": pid, "nombre": nombre, "deuda": deuda.get(pid, 0.0)} for pid, nombre in proveedores.items()]
+
+
+# ---------- Devoluciones y cambios ----------
+
+def registrar_devolucion(presupuesto_id: int, producto_id: int, cantidad: int):
+    client = get_client()
+    result = client.table("toro_devoluciones").insert({
+        "presupuesto_id": presupuesto_id,
+        "tipo": "devolucion",
+        "producto_id": producto_id,
+        "cantidad": cantidad,
+    }).execute()
+    client.rpc("ajustar_stock", {"p_producto_id": producto_id, "p_delta": cantidad}).execute()
+    return result.data[0]
+
+
+def registrar_cambio(
+    presupuesto_id: int,
+    producto_id: int,
+    cantidad: int,
+    producto_cambio_id: int,
+    cantidad_cambio: int,
+):
+    client = get_client()
+    client.rpc("registrar_cambio", {
+        "p_producto_viejo_id": producto_id,
+        "p_cantidad_vieja": cantidad,
+        "p_producto_nuevo_id": producto_cambio_id,
+        "p_cantidad_nueva": cantidad_cambio,
+    }).execute()
+    result = client.table("toro_devoluciones").insert({
+        "presupuesto_id": presupuesto_id,
+        "tipo": "cambio",
+        "producto_id": producto_id,
+        "cantidad": cantidad,
+        "producto_cambio_id": producto_cambio_id,
+        "cantidad_cambio": cantidad_cambio,
+    }).execute()
+    return result.data[0]
+
+
+def obtener_devoluciones(presupuesto_id: int):
+    client = get_client()
+    result = (
+        client.table("toro_devoluciones")
+        .select("*, producto:toro_productos!toro_devoluciones_producto_id_fkey(codigo, descripcion), producto_cambio:toro_productos!toro_devoluciones_producto_cambio_id_fkey(codigo, descripcion)")
+        .eq("presupuesto_id", presupuesto_id)
+        .order("id", desc=True)
+        .execute()
+    )
+    return result.data
