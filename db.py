@@ -111,6 +111,51 @@ def buscar_productos(
     return query.execute().data
 
 
+# ---------- Alta de productos ----------
+
+def crear_producto(
+    familia: str,
+    subfamilia: str,
+    codigo: str,
+    precio: float,
+    stock: int,
+    marca: str | None = None,
+    tipo: str | None = None,
+    lado: str | None = None,
+    descripcion: str | None = None,
+    proveedor: str | None = None,
+):
+    client = get_client()
+    result = client.table("toro_productos").insert({
+        "familia": familia,
+        "subfamilia": subfamilia,
+        "codigo": codigo,
+        "marca": marca or None,
+        "tipo": tipo or None,
+        "lado": lado or None,
+        "descripcion": descripcion or None,
+        "precio": precio,
+        "stock": stock,
+        "proveedor": proveedor or None,
+    }).execute()
+    return result.data[0]
+
+
+def agregar_marcas_compatibles(producto_id: int, marcas_vehiculo: list[str]):
+    client = get_client()
+    rows = [{"producto_id": producto_id, "marca_vehiculo": m} for m in marcas_vehiculo]
+    if rows:
+        client.table("toro_marcas_compatibles").insert(rows).execute()
+
+
+def agregar_modelos_compatibles(producto_id: int, entradas: list[tuple[str, str]]):
+    """entradas: lista de tuplas (marca_vehiculo, modelo)."""
+    client = get_client()
+    rows = [{"producto_id": producto_id, "marca_vehiculo": m, "modelo": mod} for m, mod in entradas]
+    if rows:
+        client.table("toro_modelos_compatibles").insert(rows).execute()
+
+
 # ---------- Presupuestos ----------
 
 def crear_presupuesto():
