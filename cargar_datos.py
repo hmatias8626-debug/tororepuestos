@@ -1,5 +1,5 @@
 """
-Carga productos.csv y marcas_compatibles.csv a Supabase.
+Carga productos_v2.csv, marcas_compatibles_v2.csv y modelos_compatibles.csv a Supabase.
 
 Requiere la SERVICE_ROLE key (no la anon key) porque hace inserts masivos
 saltando RLS. Conseguila en Supabase -> Settings -> API -> service_role.
@@ -24,16 +24,19 @@ if not URL or not KEY:
 client = create_client(URL, KEY)
 
 
-def cargar_productos(path="productos.csv"):
+def cargar_productos(path="productos_v2.csv"):
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = []
         for row in reader:
             rows.append({
                 "id": int(row["id"]),
-                "categoria": row["categoria"],
+                "familia": row["familia"],
+                "subfamilia": row["subfamilia"],
                 "codigo": row["codigo"],
                 "marca": row["marca"] or None,
+                "tipo": row["tipo"] or None,
+                "lado": row["lado"] or None,
                 "descripcion": row["descripcion"] or None,
                 "precio": float(row["precio"] or 0),
                 "stock": int(row["stock"] or 0),
@@ -41,31 +44,45 @@ def cargar_productos(path="productos.csv"):
                 "fecha_actualizacion": row["fecha_actualizacion"] or None,
             })
 
-    # insertar en lotes de 100
     for i in range(0, len(rows), 100):
         lote = rows[i:i + 100]
-        client.table("productos").insert(lote).execute()
+        client.table("toro_productos").insert(lote).execute()
         print(f"  productos: {i + len(lote)}/{len(rows)}")
-
     print(f"Cargados {len(rows)} productos.")
 
 
-def cargar_compatibilidades(path="marcas_compatibles.csv"):
+def cargar_marcas(path="marcas_compatibles_v2.csv"):
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = [{"producto_id": int(row["producto_id"]), "marca_vehiculo": row["marca_vehiculo"]} for row in reader]
 
     for i in range(0, len(rows), 100):
         lote = rows[i:i + 100]
-        client.table("marcas_compatibles").insert(lote).execute()
-        print(f"  compatibilidades: {i + len(lote)}/{len(rows)}")
+        client.table("toro_marcas_compatibles").insert(lote).execute()
+        print(f"  marcas_compatibles: {i + len(lote)}/{len(rows)}")
+    print(f"Cargadas {len(rows)} marcas compatibles.")
 
-    print(f"Cargadas {len(rows)} compatibilidades.")
+
+def cargar_modelos(path="modelos_compatibles.csv"):
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = [
+            {"producto_id": int(row["producto_id"]), "marca_vehiculo": row["marca_vehiculo"], "modelo": row["modelo"]}
+            for row in reader
+        ]
+
+    for i in range(0, len(rows), 100):
+        lote = rows[i:i + 100]
+        client.table("toro_modelos_compatibles").insert(lote).execute()
+        print(f"  modelos_compatibles: {i + len(lote)}/{len(rows)}")
+    print(f"Cargados {len(rows)} modelos compatibles.")
 
 
 if __name__ == "__main__":
     print("Cargando productos...")
     cargar_productos()
-    print("Cargando compatibilidades...")
-    cargar_compatibilidades()
+    print("Cargando marcas compatibles...")
+    cargar_marcas()
+    print("Cargando modelos compatibles...")
+    cargar_modelos()
     print("Listo.")

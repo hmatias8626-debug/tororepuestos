@@ -13,7 +13,7 @@ if "carrito" not in st.session_state or not st.session_state.carrito:
 # Traemos el detalle actual de cada producto en el carrito (por si cambió el precio/stock)
 ids = list(st.session_state.carrito.keys())
 client = get_client()
-detalle = client.table("productos").select("*").in_("id", ids).execute().data
+detalle = client.table("toro_productos").select("*").in_("id", ids).execute().data
 detalle_por_id = {p["id"]: p for p in detalle}
 
 total = 0
