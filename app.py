@@ -113,7 +113,7 @@ with col_der:
 
         st.write("")
         if st.button("Ir al carrito →", type="primary", use_container_width=True):
-            st.switch_page("pages/1_Carrito.py")
+            st.switch_page("pages/1_🛒_Carrito.py")
     else:
         st.markdown(
             "<p style='color:#888; font-size:13px; text-align:center; padding:20px 0;'>"
