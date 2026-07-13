@@ -245,9 +245,14 @@ def obtener_presupuesto(presupuesto_id: int):
     return result.data
 
 
-def confirmar_presupuesto(presupuesto_id: int):
+def confirmar_presupuesto(presupuesto_id: int, metodo_pago: str):
     client = get_client()
-    client.rpc("confirmar_presupuesto", {"p_id": presupuesto_id}).execute()
+    client.rpc("confirmar_presupuesto", {"p_id": presupuesto_id, "p_metodo_pago": metodo_pago}).execute()
+
+
+def cancelar_presupuesto(presupuesto_id: int):
+    client = get_client()
+    client.rpc("cancelar_presupuesto", {"p_id": presupuesto_id}).execute()
 
 
 def anular_presupuesto(presupuesto_id: int):
@@ -261,6 +266,19 @@ def listar_presupuestos(estado: str | None = None, limit: int = 100):
     if estado and estado != "Todos":
         query = query.eq("estado", estado)
     return query.execute().data
+
+
+# ---------- Reportes de ventas ----------
+
+def obtener_ventas_confirmadas():
+    client = get_client()
+    result = (
+        client.table("toro_presupuestos")
+        .select("id, numero, fecha, fecha_confirmacion, metodo_pago, total")
+        .eq("estado", "confirmado")
+        .execute()
+    )
+    return result.data
 
 
 # ---------- Control de stock ----------
