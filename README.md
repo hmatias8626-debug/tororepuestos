@@ -60,8 +60,9 @@ usa tu cuñado hoy (detalle / precio unitario / importe / total).
 ## 5. Estructura de la app
 
 - `app.py` — catálogo con filtros en cascada + panel de presupuesto en vivo
-- `pages/1_Nuevo_Presupuesto.py` — revisa el carrito, valida stock, confirma
-  el presupuesto (descuenta stock vía la función SQL `confirmar_presupuesto`)
+- `pages/1_Carrito.py` — revisa el carrito y guarda el presupuesto como
+  borrador; desde ahí (o más tarde desde Historial) se confirma como venta
+  eligiendo método de pago, recién ahí se descuenta stock vía `confirmar_presupuesto`
 - `pages/2_Historial.py` — presupuestos anteriores, permite anular (devuelve stock)
 - `db.py` — todas las consultas a Supabase en un solo lugar
 

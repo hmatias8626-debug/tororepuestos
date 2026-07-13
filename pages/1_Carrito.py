@@ -1,8 +1,8 @@
 import streamlit as st
 from db import crear_presupuesto, agregar_item, confirmar_presupuesto, get_client
 
-st.set_page_config(page_title="Nuevo presupuesto", page_icon="🧾", layout="wide")
-st.title("🧾 Nuevo presupuesto")
+st.set_page_config(page_title="Carrito", page_icon="🛒", layout="wide")
+st.title("🛒 Carrito")
 
 if "presupuesto_guardado" in st.session_state:
     p = st.session_state.presupuesto_guardado
