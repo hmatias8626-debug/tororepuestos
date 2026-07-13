@@ -409,3 +409,33 @@ def obtener_devoluciones(presupuesto_id: int):
         .execute()
     )
     return result.data
+
+
+# ---------- Gastos ----------
+
+def registrar_gasto(descripcion: str, monto: float, fecha: str):
+    client = get_client()
+    result = client.table("toro_gastos").insert({
+        "descripcion": descripcion,
+        "monto": monto,
+        "fecha": fecha,
+    }).execute()
+    return result.data[0]
+
+
+def obtener_gastos(limit: int = 500):
+    client = get_client()
+    result = (
+        client.table("toro_gastos")
+        .select("*")
+        .order("fecha", desc=True)
+        .order("id", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return result.data
+
+
+def eliminar_gasto(gasto_id: int):
+    client = get_client()
+    client.table("toro_gastos").delete().eq("id", gasto_id).execute()
